@@ -59,7 +59,8 @@
       "evidenceChunkId": null
     }
   ],
-  "overallVerdict": "MIXED"
+  "overallVerdict": "MIXED",
+  "summaryReason": "3 of 4 jurors trust this, but Skeptic flagged: Omits the late-cancellation exception in source 2."
 }
 ```
 
@@ -75,7 +76,8 @@ Same shape, but `jurors` may contain fewer than 4 entries. Never pad with placeh
     { "name": "Domain Expert", "verdict": "trust", "confidence": 85, "reasoning": "...", "disputedClaim": null, "evidenceChunkId": null },
     { "name": "Context Judge", "verdict": "flag", "confidence": 55, "reasoning": "...", "disputedClaim": "...", "evidenceChunkId": "src_2" }
   ],
-  "overallVerdict": "TRUSTED"
+  "overallVerdict": "TRUSTED",
+  "summaryReason": "2 of 3 jurors trust this, but Context Judge flagged: ..."
 }
 ```
 (Skeptic dropped after a timeout — 3 of 4 jurors present.)
@@ -93,6 +95,7 @@ Same shape, but `jurors` may contain fewer than 4 entries. Never pad with placeh
 | `disputedClaim` | string \| null | present only when `verdict` is `"flag"` |
 | `evidenceChunkId` | string \| null | present only when `verdict` is `"flag"`; must match an `id` in `sources` |
 | `overallVerdict` | string | ALL CAPS only — `"TRUSTED"` \| `"FLAGGED"` \| `"MIXED"` |
+| `summaryReason` | string | top-level, not per-juror; ≤20 words; built by plain code, not an LLM call — see Summary Reason Rule below |
 
 ## Ordering
 When all 4 jurors respond, they're always returned in this fixed order:
@@ -103,6 +106,14 @@ Frontend renders 4 fixed card slots, not a dynamic list.
 Computed in plain code, never by an LLM call:
 - **All 4 present:** `TRUSTED` if trust count ≥ 3, `FLAGGED` if flag count ≥ 2, else `MIXED`
 - **Fewer than 4 present (a juror was dropped):** `TRUSTED` if trust count > half of jurors present, `FLAGGED` if flag count ≥ half of jurors present, else `MIXED`
+
+## Summary Reason Rule
+Also computed in plain code, not by an LLM call — built directly from the juror objects already returned, no extra API call needed:
+- **No flags, no uncertain:** `"All {N} jurors trust this answer."`
+- **At least one flag:** `"{trustCount} of {N} jurors trust this, but {firstFlaggedJuror.name} flagged: {firstFlaggedJuror.reasoning}"` — using the first flagged juror in fixed order (Literalist → Skeptic → Domain Expert → Context Judge)
+- **No flags, but at least one uncertain:** `"{trustCount} of {N} jurors trust this; {uncertainCount} remain uncertain."`
+
+`summaryReason` is capped at ~20 words since it's quoting an existing `reasoning` string — if that risks exceeding it, truncate the quoted reasoning with `…` rather than dropping the sentence.
 
 ## Failure Handling
 If a juror's LLM call fails or times out, that juror is dropped from the `jurors` array entirely — never returned as an error object or a placeholder. The aggregator recalculates `overallVerdict` based on however many jurors actually responded.
