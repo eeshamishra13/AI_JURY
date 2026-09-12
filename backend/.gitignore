@@ -1,0 +1,16 @@
+﻿# Dependencies
+node_modules/
+
+# Environment secrets — NEVER commit real keys
+.env
+
+# Build artifacts and temporary files
+*.zip
+*.log
+npm-debug.log*
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

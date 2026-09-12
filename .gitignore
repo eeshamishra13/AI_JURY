@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build artifacts
+dist/
+build/
+.manus-logs/
+
+# Archives
+*.zip
+*.tar.gz
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
